@@ -1,0 +1,82 @@
+# Détection de valeurs manquantes
+print("1. Valeurs manquantes")
+missing = pd.DataFrame({
+    'Nb manquants': df.isnull().sum(),
+    '% manquants': (df.isnull().sum() / len(df) * 100).round(2)
+}).sort_values('% manquants', ascending=False)
+
+missing_only = missing[missing['Nb manquants'] > 0]
+print(f"\n{missing_only.shape[0]} colonnes ont des valeurs manquantes sur {df.shape[1]} :\n")
+print(missing_only.to_string())
+
+print("\n "+ "-" * 60)
+
+# Vérification des doublons
+print("\n" + "2.Doublons")
+
+n_dupes = df.duplicated().sum()
+print(f"\nNombre de lignes dupliquées : {n_dupes}")
+if n_dupes > 0:
+    df = df.drop_duplicates()
+    print(f"  → {n_dupes} doublon(s) supprimé(s). Nouveau shape : {df.shape}")
+
+print("\n "+ "-" * 60)
+
+# Vérification des types de données dans chaque colonne
+print("\n" + "3. Type de données")
+print("\nTypes actuels :")
+print(df.dtypes.value_counts())
+
+# Colonnes object avec peu de valeurs uniques → probablement catégorielles
+obj_cols = df.select_dtypes(include='object').columns
+for col in obj_cols:
+    n_unique = df[col].nunique()
+    print(f"  '{col}' : {n_unique} valeurs uniques → ", end="")
+    if n_unique <= 20:
+        print("candidat catégoriel (pd.Categorical)")
+    else:
+        print("texte libre ou ID")
+
+print("\n "+ "-" * 60)
+
+# Vérification des valeurs aberrantes
+print("\n"+"4. Valeurs aberrantes")
+num_cols = df.select_dtypes(include='number').columns
+outlier_report = []
+
+for col in num_cols:
+    Q1 = df[col].quantile(0.25)
+    Q3 = df[col].quantile(0.75)
+    IQR = Q3 - Q1
+    n_out = ((df[col] < Q1 - 1.5 * IQR) | (df[col] > Q3 + 1.5 * IQR)).sum()
+    if n_out > 0:
+        outlier_report.append({'Colonne': col, 'Nb outliers': n_out,
+                                '% outliers': round(n_out / len(df) * 100, 2)})
+
+outlier_df = pd.DataFrame(outlier_report).sort_values('% outliers', ascending=False)
+print(f"\n{len(outlier_df)} colonnes avec des outliers :\n")
+print(outlier_df.to_string(index=False))
+
+# Supprimer les lignes avec valeurs manquantes (241 lignes, 0.18%)
+df = df.dropna(subset=['icu_admit_source'])
+print(f"Après suppression NaN : {df.shape[0]} patients")
+
+# Convertir les colonnes object en Categorical
+cat_cols = ['partition', 'dcs_group', 'icu_admit_source', 'group']
+for col in cat_cols:
+    df[col] = pd.Categorical(df[col])
+
+# Supprimer les colonnes ID (inutiles pour la modélisation)
+df = df.drop(columns=['patientunitstayid', 'encounter_id'])
+
+# Définir la variable cible
+TARGET = 'hospital_death'
+
+# Séparer features et cible
+X = df.drop(columns=[TARGET, 'icu_death'])  # on retire les 2 cibles
+y = df[TARGET]
+
+print(f"\nDataset final : {df.shape[0]} patients x {df.shape[1]} variables")
+print(f"Features (X)  : {X.shape[1]} colonnes")
+print(f"Cible (y)     : '{TARGET}' — {y.sum()} décès ({y.mean()*100:.1f}%)")
+print("\nDataset prêt pour la suite ✓")
