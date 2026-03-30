@@ -47,7 +47,7 @@ display(pd.DataFrame(type_analysis).style.hide(axis='index'))
 display(HTML("<hr>"))
 
 
-# --- 4. Valeurs aberrantes (Outliers) ---
+# 4. Valeurs aberrantes (Outliers)
 display(Markdown("## 4. Valeurs aberrantes"))
 
 # Explication de la méthode
