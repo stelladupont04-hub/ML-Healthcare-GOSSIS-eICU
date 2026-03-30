@@ -1,0 +1,35 @@
+# Analyse de la variable cible
+print("VARIABLE CIBLE : hospital_death")
+
+# Distribution brute
+counts = y.value_counts()
+pcts   = y.value_counts(normalize=True) * 100
+
+print(f"\nSurvivants  (0) : {counts[0]:>7}  ({pcts[0]:.1f}%)")
+print(f"Décès       (1) : {counts[1]:>7}  ({pcts[1]:.1f}%)")
+print(f"Ratio déséquilibre : 1 décès pour {counts[0]//counts[1]} survivants")
+
+# Visualisation
+fig, axes = plt.subplots(1, 2, figsize=(12, 4))
+
+# Barplot
+axes[0].bar(['Survivants (0)', 'Décès (1)'], counts.values,
+            color=['#2E86C1', '#E74C3C'], edgecolor='white', linewidth=1.5)
+axes[0].set_title("Distribution de la variable cible", fontweight='bold', pad=15)
+axes[0].set_ylabel("Nombre de patients")
+for i, v in enumerate(counts.values):
+    axes[0].text(i, v + 500, f'{v:,}\n({pcts[i]:.1f}%)',
+                 ha='center', fontweight='bold')
+axes[0].set_ylim(0, counts[0] * 1.15)
+axes[0].spines[['top', 'right']].set_visible(False)
+
+# Pie
+axes[1].pie(counts.values, labels=['Survivants', 'Décès'],
+            colors=['#2E86C1', '#E74C3C'], autopct='%1.1f%%',
+            startangle=90, wedgeprops={'edgecolor': 'white', 'linewidth': 2})
+axes[1].set_title("Répartition des classes", fontweight='bold', pad=15)
+
+plt.suptitle("Déséquilibre des classes — hospital_death", fontsize=13,
+             fontweight='bold', y=1.02)
+plt.tight_layout()
+plt.show()
