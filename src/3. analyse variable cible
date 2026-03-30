@@ -1,35 +1,77 @@
-# Analyse de la variable cible
-print("VARIABLE CIBLE : hospital_death")
+import matplotlib.pyplot as plt
 
-# Distribution brute
+# --- 1. CALCULS PRÉALABLES ---
 counts = y.value_counts()
-pcts   = y.value_counts(normalize=True) * 100
+pcts = y.value_counts(normalize=True) * 100
+ratio = counts[0] // counts[1]
 
-print(f"\nSurvivants  (0) : {counts[0]:>7}  ({pcts[0]:.1f}%)")
-print(f"Décès       (1) : {counts[1]:>7}  ({pcts[1]:.1f}%)")
-print(f"Ratio déséquilibre : 1 décès pour {counts[0]//counts[1]} survivants")
+# --- 2. TABLEAU DE BORD (STYLE DASHBOARD) ---
+display(Markdown("## Analyse de la Variable Cible"))
 
-# Visualisation
-fig, axes = plt.subplots(1, 2, figsize=(12, 4))
+target_html = f"""
+<div style="background-color: #fcfcfc; border: 1px solid #dcdde1; padding: 15px; border-radius: 10px; margin-bottom: 20px;">
+    <h3 style="margin-top: 0; color: #2c3e50; border-bottom: 2px solid #E74C3C; display: inline-block;">Cible : {TARGET}</h3>
+    <table style="width: 100%; border: none; margin-top: 10px;">
+        <tr style="font-size: 15px;">
+            <td>🟦 <b>Survivants (0) :</b></td>
+            <td>{counts[0]:,} patients</td>
+            <td style="color: #7f8c8d;">({pcts[0]:.1f}%)</td>
+        </tr>
+        <tr style="font-size: 15px;">
+            <td>🟥 <b>Décès (1) :</b></td>
+            <td>{counts[1]:,} patients</td>
+            <td style="color: #7f8c8d;">({pcts[1]:.1f}%)</td>
+        </tr>
+    </table>
+    <div style="margin-top: 15px; padding: 8px; background-color: #fdf2f2; border-radius: 5px; color: #c0392b; font-weight: bold; text-align: center;">
+        ⚠️ Ratio de déséquilibre : 1 décès pour {ratio:.0f} survivants
+    </div>
+</div>
+"""
+display(HTML(target_html))
 
-# Barplot
-axes[0].bar(['Survivants (0)', 'Décès (1)'], counts.values,
-            color=['#2E86C1', '#E74C3C'], edgecolor='white', linewidth=1.5)
-axes[0].set_title("Distribution de la variable cible", fontweight='bold', pad=15)
-axes[0].set_ylabel("Nombre de patients")
-for i, v in enumerate(counts.values):
-    axes[0].text(i, v + 500, f'{v:,}\n({pcts[i]:.1f}%)',
-                 ha='center', fontweight='bold')
-axes[0].set_ylim(0, counts[0] * 1.15)
+# --- 3. VISUALISATION AVANCÉE ---
+# Configuration du style
+plt.rcParams['font.family'] = 'sans-serif'
+fig, axes = plt.subplots(1, 2, figsize=(14, 5), gridspec_kw={'width_ratios': [1.2, 1]})
+
+# Couleurs plus modernes (Bleu acier et Corail doux)
+colors = ['#5499C7', '#EC7063']
+
+# A. BARPLOT (Distribution)
+bars = axes[0].bar(['Survivants', 'Décès'], counts.values, color=colors, width=0.6, 
+                   edgecolor='black', linewidth=0.8, alpha=0.9)
+axes[0].set_title("Distribution du nombre de patients", fontsize=12, fontweight='bold', pad=20)
+axes[0].set_ylabel("Effectifs", fontsize=10, labelpad=10)
+
+# Ajout des étiquettes au-dessus des barres
+for bar in bars:
+    height = bar.get_height()
+    axes[0].text(bar.get_x() + bar.get_width()/2., height + (counts[0]*0.02),
+                 f'{int(height):,}\n({height/len(y)*100:.1f}%)',
+                 ha='center', va='bottom', fontweight='bold', fontsize=10, color='#2c3e50')
+
+# Esthétique du Barplot
 axes[0].spines[['top', 'right']].set_visible(False)
+axes[0].grid(axis='y', linestyle='--', alpha=0.3)
+axes[0].set_ylim(0, counts[0] * 1.2)
 
-# Pie
-axes[1].pie(counts.values, labels=['Survivants', 'Décès'],
-            colors=['#2E86C1', '#E74C3C'], autopct='%1.1f%%',
-            startangle=90, wedgeprops={'edgecolor': 'white', 'linewidth': 2})
-axes[1].set_title("Répartition des classes", fontweight='bold', pad=15)
+# B. PIE CHART (Proportions)
+# Effet "Donut" pour plus de modernité
+wedges, texts, autotexts = axes[1].pie(
+    counts.values, labels=['Survivants', 'Décès'], colors=colors, 
+    autopct='%1.1f%%', startangle=140, pctdistance=0.85,
+    wedgeprops={'width': 0.4, 'edgecolor': 'white', 'linewidth': 3}
+)
 
-plt.suptitle("Déséquilibre des classes — hospital_death", fontsize=13,
-             fontweight='bold', y=1.02)
+# Style des textes du Pie
+plt.setp(autotexts, size=10, weight="bold", color="white")
+plt.setp(texts, size=11, fontweight='bold')
+axes[1].set_title("Répartition relative (%)", fontsize=12, fontweight='bold', pad=20)
+
+# Titre général
+plt.suptitle(f"Analyse du déséquilibre des classes : {TARGET}", 
+             fontsize=15, fontweight='bold', y=1.05, color='#2c3e50')
+
 plt.tight_layout()
 plt.show()
