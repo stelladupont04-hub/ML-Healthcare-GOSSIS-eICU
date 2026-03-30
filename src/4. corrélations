@@ -1,0 +1,70 @@
+from IPython.display import display, Markdown, HTML
+import seaborn as sns
+import matplotlib.pyplot as plt
+
+# --- SECTION 1.4 : ANALYSE DE CORRÉLATION ---
+display(Markdown("# 1.4. Analyse de Corrélation"))
+
+display(Markdown("""
+Cette analyse identifie les variables numériques ayant la plus forte influence sur la mortalité hospitalière. 
+Nous utilisons le coefficient de **Pearson** pour mesurer l'intensité de la relation linéaire entre les biomarqueurs et la cible.
+"""))
+
+# 1. Calcul des corrélations (uniquement numériques)
+# On calcule la corrélation de toutes les colonnes avec la cible 'hospital_death'
+corr_matrix = df.corr(numeric_only=True)
+target_corr = corr_matrix[TARGET].sort_values(ascending=False)
+
+# 2. Sélection du Top 15 (en valeur absolue pour capter les corrélations positives et négatives)
+top_15_corr = target_corr.abs().sort_values(ascending=False).head(16) # 16 car la cible est incluse
+top_15_corr = top_15_corr.drop(TARGET) # On enlève la cible pour l'affichage
+
+# --- AFFICHAGE GRAPHIQUE ---
+plt.figure(figsize=(12, 8))
+sns.set_style("whitegrid")
+
+# Création du barplot
+colors = sns.color_palette("RdYlGn_r", len(top_15_corr))
+ax = sns.barplot(
+    x=top_15_corr.values, 
+    y=top_15_corr.index, 
+    hue=top_15_corr.index, 
+    palette=colors, 
+    legend=False          
+)
+# Personnalisation
+plt.title(f"Top 15 des variables les plus discriminantes pour {TARGET}", fontsize=15, pad=20, fontweight='bold')
+plt.xlabel("Coefficient de corrélation (Valeur Absolue)", fontsize=12)
+plt.ylabel("Variables (Biomarqueurs & Signes vitaux)", fontsize=12)
+
+# Ajout des valeurs au bout des barres
+for i, v in enumerate(top_15_corr.values):
+    ax.text(v + 0.01, i, f"{v:.3f}", color='black', va='center', fontweight='bold')
+
+plt.tight_layout()
+plt.show()
+
+# --- BILAN ANALYTIQUE ---
+top_var = top_15_corr.index[0]
+top_val = top_15_corr.values[0]
+
+# Heatmap
+top_features = list(top_15_corr.index) + [TARGET]
+subset_corr = df[top_features].corr()
+
+# Masque pour la partie supérieure
+mask = np.triu(np.ones_like(subset_corr, dtype=bool))
+
+# Affichage graphique
+plt.figure(figsize=(14, 10))
+sns.heatmap(subset_corr, 
+            mask=mask, 
+            annot=True, 
+            cmap='coolwarm', 
+            fmt=".2f", 
+            center=0,
+            linewidths=.5, 
+            cbar_kws={"shrink": .8})
+
+plt.title("Matrice de corrélation croisée (Triangle inférieur)", fontsize=15, fontweight='bold', pad=20)
+plt.show()
