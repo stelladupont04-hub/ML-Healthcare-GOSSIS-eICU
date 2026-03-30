@@ -7,6 +7,8 @@ import seaborn as sns
 from IPython.display import display, Markdown, HTML
 
 base_path = "/Users/leafelizardo/Desktop/MLH_Projet/data"
+file_name = "gossis-1-eicu-only-model-ready.csv"
+full_path = os.path.join(base_path, file_name)
 
 # --- CHARGEMENT ET CONFIGURATION ---
 try:
