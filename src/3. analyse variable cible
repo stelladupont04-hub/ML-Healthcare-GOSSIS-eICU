@@ -1,5 +1,3 @@
-import matplotlib.pyplot as plt
-
 # --- 1. CALCULS PRÉALABLES ---
 counts = y.value_counts()
 pcts = y.value_counts(normalize=True) * 100
