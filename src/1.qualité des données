@@ -1,0 +1,88 @@
+# 1. Valeurs manquantes
+display(Markdown("## 1. Valeurs manquantes"))
+missing = pd.DataFrame({
+    'Nb manquants': df.isnull().sum(),
+    '% manquants': (df.isnull().sum() / len(df) * 100)
+}).sort_values('% manquants', ascending=False)
+
+missing_only = missing[missing['Nb manquants'] > 0]
+
+display(Markdown(f"*{missing_only.shape[0]} colonnes ont des valeurs manquantes sur {df.shape[1]}*"))
+if not missing_only.empty:
+    display(missing_only.style.background_gradient(cmap='Reds', subset=['% manquants'])
+            .format({'% manquants': '{:.2f}%'}))
+
+display(HTML("<hr>"))
+
+# 2. Doublons
+display(Markdown("## 2. Doublons"))
+n_dupes = df.duplicated().sum()
+
+if n_dupes > 0:
+    display(HTML(f"<div style='color: #e74c3c; font-weight: bold;'>⚠️ {n_dupes} doublon(s) détecté(s) et supprimé(s).</div>"))
+    df = df.drop_duplicates()
+    display(Markdown(f"**Nouveau shape :** `{df.shape}`"))
+else:
+    display(HTML("<div style='color: #27ae60; font-weight: bold;'>✅ Aucun doublon détecté.</div>"))
+
+display(HTML("<hr>"))
+
+# 3. Type de données
+display(Markdown("## 3. Type de données"))
+col1, col2 = st.columns(2) if 'st' in globals() else (None, None) # Pour Streamlit, mais ici on reste sur Jupyter
+
+display(Markdown("**Répartition des types :**"))
+display(df.dtypes.value_counts().to_frame('Nombre').T)
+
+display(Markdown("**Analyse des colonnes 'Object' :**"))
+obj_cols = df.select_dtypes(include='object').columns
+type_analysis = []
+for col in obj_cols:
+    n_unique = df[col].nunique()
+    suggestion = "Categorical" if n_unique <= 20 else "Texte/ID"
+    type_analysis.append({'Colonne': col, 'Uniques': n_unique, 'Suggestion': suggestion})
+
+display(pd.DataFrame(type_analysis).style.hide(axis='index'))
+
+display(HTML("<hr>"))
+
+
+# --- 4. Valeurs aberrantes (Outliers) ---
+display(Markdown("## 4. Valeurs aberrantes"))
+
+# Explication de la méthode
+display(Markdown("""
+L'analyse ci-dessous identifie les valeurs aberrantes en utilisant la méthode de l'**Écart Interquartile (IQR)**. 
+Une valeur est considérée comme aberrante si elle se situe en dehors de l'intervalle :  
+`[Q1 - 1.5 * IQR ; Q3 + 1.5 * IQR]`.
+
+*Note : Seules les 15 colonnes présentant le taux d'outliers le plus élevé sont affichées pour faciliter la lecture.*
+"""))
+
+num_cols = df.select_dtypes(include='number').columns
+outlier_report = []
+
+for col in num_cols:
+    Q1 = df[col].quantile(0.25)
+    Q3 = df[col].quantile(0.75)
+    IQR = Q3 - Q1
+    n_out = ((df[col] < Q1 - 1.5 * IQR) | (df[col] > Q3 + 1.5 * IQR)).sum()
+    if n_out > 0:
+        outlier_report.append({
+            'Colonne': col, 
+            'Nb outliers': n_out, 
+            '% outliers': n_out / len(df) * 100
+        })
+
+outlier_df = pd.DataFrame(outlier_report).sort_values('% outliers', ascending=False)
+
+# Affichage du tableau sobre
+if not outlier_df.empty:
+    display(Markdown(f"**Total : {len(outlier_df)} colonnes contiennent des valeurs aberrantes.**"))
+    
+    # .style sans couleurs, juste pour le formatage des nombres
+    display(outlier_df.head(15).style
+            .format({'% outliers': '{:.2f}%', 'Nb outliers': '{:,}'})
+            .hide(axis='index'))
+else:
+    display(Markdown("✅ Aucune valeur aberrante détectée selon la méthode IQR."))
