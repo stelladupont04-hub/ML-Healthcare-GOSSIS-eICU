@@ -4,29 +4,45 @@ import os
 import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
+from IPython.display import display, Markdown, HTML
 
-base_path = "C:/Users/stell/Desktop/MLH_Projet/data"
+base_path = "/Users/leafelizardo/Desktop/MLH_Projet/data"
 
-# chargement du jeu de données
-file_name = "gossis-1-eicu-only-model-ready.csv"
-full_path = os.path.join(base_path, file_name)
-
+# --- CHARGEMENT ET CONFIGURATION ---
 try:
     df = pd.read_csv(full_path)
-    print("Le dataset est chargé")
-except FileNotFoundError:
-    print("Erreur : Chemin introuvable")
-
     
-# Aperçu rapide du nombre de données
-print(f"Le dataset contient {df.shape[0]} patients et {df.shape[1]} variables.")
+    # Calcul des statistiques rapides
+    n_patients = df.shape[0]
+    n_variables = df.shape[1]
+    n_numeric = df.select_dtypes(include=['number']).shape[1]
+    n_categorical = df.select_dtypes(exclude=['number']).shape[1]
 
-# Identification des types de variables
-n_numeric = df.select_dtypes(include=['number']).shape[1]
-n_categorical = df.select_dtypes(exclude=['number']).shape[1]
+    # --- AFFICHAGE DU DASHBOARD D'IMPORTATION ---
+    display(Markdown("# Chargement du Jeu de Données"))
+    
+    import_html = f"""
+    <div style="background-color: #f0f7fb; border: 1px solid #2980b9; padding: 15px; border-radius: 8px;">
+        <p style="margin: 0; color: #2980b9; font-weight: bold; font-size: 16px;"> Dataset chargé avec succès</p>
+        <hr style="margin: 10px 0; border: 0; border-top: 1px solid #dee2e6;">
+        <table style="width: 100%; border: none; font-size: 14px;">
+            <tr>
+                <td style="width: 50%;"> <b>Volume :</b> {n_patients:,} patients</td>
+                <td style="width: 50%;"> <b>Total variables :</b> {n_variables}</td>
+            </tr>
+            <tr>
+                <td> <b>Numériques :</b> {n_numeric}</td>
+                <td> <b>Catégorielles :</b> {n_categorical}</td>
+            </tr>
+        </table>
+    </div>
+    """
+                
+    display(HTML(import_html))
+    
+    # --- APERÇU DES DONNÉES ---
+    display(Markdown("### Aperçu des 10 premières lignes"))
+    display(df.head(10))
 
-print(f"Variables numériques : {n_numeric}")
-print(f"Variables catégorielles : {n_categorical}")
-
-# Affichage des 10 premières colonnes pour la structure
-df.head(10)
+except FileNotFoundError:
+    display(HTML("<div style='color: #e74c3c; font-weight: bold;'> Erreur : Chemin du fichier introuvable.</div>"))
