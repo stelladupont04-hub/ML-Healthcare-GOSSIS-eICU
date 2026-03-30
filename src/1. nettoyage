@@ -1,46 +1,64 @@
-# Détection de valeurs manquantes
-print("1. Valeurs manquantes")
+# 1. Valeurs manquantes
+display(Markdown("## 1. Valeurs manquantes"))
 missing = pd.DataFrame({
     'Nb manquants': df.isnull().sum(),
-    '% manquants': (df.isnull().sum() / len(df) * 100).round(2)
+    '% manquants': (df.isnull().sum() / len(df) * 100)
 }).sort_values('% manquants', ascending=False)
 
 missing_only = missing[missing['Nb manquants'] > 0]
-print(f"\n{missing_only.shape[0]} colonnes ont des valeurs manquantes sur {df.shape[1]} :\n")
-print(missing_only.to_string())
 
-print("\n "+ "-" * 60)
+display(Markdown(f"*{missing_only.shape[0]} colonnes ont des valeurs manquantes sur {df.shape[1]}*"))
+if not missing_only.empty:
+    display(missing_only.style.background_gradient(cmap='Reds', subset=['% manquants'])
+            .format({'% manquants': '{:.2f}%'}))
 
-# Vérification des doublons
-print("\n" + "2.Doublons")
+display(HTML("<hr>"))
 
+# 2. Doublons
+display(Markdown("## 2. Doublons"))
 n_dupes = df.duplicated().sum()
-print(f"\nNombre de lignes dupliquées : {n_dupes}")
+
 if n_dupes > 0:
+    display(HTML(f"<div style='color: #e74c3c; font-weight: bold;'>⚠️ {n_dupes} doublon(s) détecté(s) et supprimé(s).</div>"))
     df = df.drop_duplicates()
-    print(f"  → {n_dupes} doublon(s) supprimé(s). Nouveau shape : {df.shape}")
+    display(Markdown(f"**Nouveau shape :** `{df.shape}`"))
+else:
+    display(HTML("<div style='color: #27ae60; font-weight: bold;'>✅ Aucun doublon détecté.</div>"))
 
-print("\n "+ "-" * 60)
+display(HTML("<hr>"))
 
-# Vérification des types de données dans chaque colonne
-print("\n" + "3. Type de données")
-print("\nTypes actuels :")
-print(df.dtypes.value_counts())
+# 3. Type de données
+display(Markdown("## 3. Type de données"))
+col1, col2 = st.columns(2) if 'st' in globals() else (None, None) # Pour Streamlit, mais ici on reste sur Jupyter
 
-# Colonnes object avec peu de valeurs uniques → probablement catégorielles
+display(Markdown("**Répartition des types :**"))
+display(df.dtypes.value_counts().to_frame('Nombre').T)
+
+display(Markdown("**Analyse des colonnes 'Object' :**"))
 obj_cols = df.select_dtypes(include='object').columns
+type_analysis = []
 for col in obj_cols:
     n_unique = df[col].nunique()
-    print(f"  '{col}' : {n_unique} valeurs uniques → ", end="")
-    if n_unique <= 20:
-        print("candidat catégoriel (pd.Categorical)")
-    else:
-        print("texte libre ou ID")
+    suggestion = "Categorical" if n_unique <= 20 else "Texte/ID"
+    type_analysis.append({'Colonne': col, 'Uniques': n_unique, 'Suggestion': suggestion})
 
-print("\n "+ "-" * 60)
+display(pd.DataFrame(type_analysis).style.hide(axis='index'))
 
-# Vérification des valeurs aberrantes
-print("\n"+"4. Valeurs aberrantes")
+display(HTML("<hr>"))
+
+
+# --- 4. Valeurs aberrantes (Outliers) ---
+display(Markdown("## 4. Valeurs aberrantes"))
+
+# Explication de la méthode
+display(Markdown("""
+L'analyse ci-dessous identifie les valeurs aberrantes en utilisant la méthode de l'**Écart Interquartile (IQR)**. 
+Une valeur est considérée comme aberrante si elle se situe en dehors de l'intervalle :  
+`[Q1 - 1.5 * IQR ; Q3 + 1.5 * IQR]`.
+
+*Note : Seules les 15 colonnes présentant le taux d'outliers le plus élevé sont affichées pour faciliter la lecture.*
+"""))
+
 num_cols = df.select_dtypes(include='number').columns
 outlier_report = []
 
@@ -50,33 +68,117 @@ for col in num_cols:
     IQR = Q3 - Q1
     n_out = ((df[col] < Q1 - 1.5 * IQR) | (df[col] > Q3 + 1.5 * IQR)).sum()
     if n_out > 0:
-        outlier_report.append({'Colonne': col, 'Nb outliers': n_out,
-                                '% outliers': round(n_out / len(df) * 100, 2)})
+        outlier_report.append({
+            'Colonne': col, 
+            'Nb outliers': n_out, 
+            '% outliers': n_out / len(df) * 100
+        })
 
 outlier_df = pd.DataFrame(outlier_report).sort_values('% outliers', ascending=False)
-print(f"\n{len(outlier_df)} colonnes avec des outliers :\n")
-print(outlier_df.to_string(index=False))
 
-# Supprimer les lignes avec valeurs manquantes (241 lignes, 0.18%)
+# Affichage du tableau sobre
+if not outlier_df.empty:
+    display(Markdown(f"**Total : {len(outlier_df)} colonnes contiennent des valeurs aberrantes.**"))
+    
+    # .style sans couleurs, juste pour le formatage des nombres
+    display(outlier_df.head(15).style
+            .format({'% outliers': '{:.2f}%', 'Nb outliers': '{:,}'})
+            .hide(axis='index'))
+else:
+    display(Markdown("✅ Aucune valeur aberrante détectée selon la méthode IQR."))
+
+from IPython.display import display, Markdown, HTML
+
+display(Markdown("## Nettoyage et Préparation du Dataset"))
+
+# --- 1. JUSTIFICATION TECHNIQUE ---
+display(Markdown("""
+### Analyse des types de données
+Notre code détecte `dx_class` et `dx_sub` comme du texte (**object**), alors qu’il s’agit de variables catégorielles avec de nombreuses modalités.
+
+**Optimisation :** Nous avons décidé de supprimer `dx_sub` (trop granulaire) et de regrouper `dx_class` par grandes familles. La variable `icu_death` est également retirée pour éviter tout biais de prédiction (data leakage).
+"""))
+
+# --- 2. NETTOYAGE SPÉCIFIQUE (REGEX) ---
+display(Markdown("### Nettoyage des labels (dx_class)"))
+
+# Application du nettoyage
+df['dx_class_clean'] = df['dx_class'].str.replace(r'^\d+', '', regex=True).str.strip()
+n_unique_clean = df['dx_class_clean'].nunique()
+
+display(Markdown(f"**Action :** Suppression des préfixes numériques au début du texte."))
+display(Markdown(f"> *Nombre de catégories uniques après nettoyage : `{n_unique_clean}`*"))
+
+# --- AFFICHAGE DES 12 CATÉGORIES (FIN ET COMPACT) ---
+noms_categories = sorted(df['dx_class_clean'].unique())
+categories_df = pd.DataFrame({
+    '#': range(1, len(noms_categories) + 1),
+    'Catégorie': noms_categories
+})
+
+display(categories_df.style.hide(axis='index')
+        .set_properties(**{
+            'background-color': 'transparent',
+            'padding': '2px 8px',
+            'border-bottom': '1px solid #f0f0f0'
+        })
+        .set_properties(subset=['#'], **{
+            'text-align': 'right',
+            'width': '30px',
+            'color': '#999',
+            'font-size': '12px'
+        })
+        .set_properties(subset=['Catégorie'], **{
+            'text-align': 'left',
+            'font-size': '13px'
+        })
+        .set_table_styles([
+            {'selector': '', 'props': [('margin-left', 'auto'), ('margin-right', 'auto'), ('width', 'auto'), ('border-collapse', 'collapse')]}, 
+            {'selector': 'th', 'props': [('color', '#2980b9'), ('font-weight', 'bold'), ('text-align', 'center'), ('border-bottom', '1px solid #2980b9'), ('padding', '5px')]}
+        ]))
+
+# --- 3. EXÉCUTION DU NETTOYAGE GLOBAL ---
+
+# Suppression des NaN
 df = df.dropna(subset=['icu_admit_source'])
-print(f"Après suppression NaN : {df.shape[0]} patients")
 
-# Convertir les colonnes object en Categorical
-cat_cols = ['partition', 'dcs_group', 'icu_admit_source', 'group']
+# Conversion en Categorical (On enlève dx_sub d'ici car on va la supprimer)
+cat_cols = ['partition', 'dcs_group', 'icu_admit_source', 'group', 'dx_class_clean']
 for col in cat_cols:
-    df[col] = pd.Categorical(df[col])
+    if col in df.columns:
+        df[col] = df[col].astype('category')
 
-# Supprimer les colonnes ID (inutiles pour la modélisation)
-df = df.drop(columns=['patientunitstayid', 'encounter_id'])
+# Suppression des IDs, de l'ancienne colonne dx_class, de dx_sub et icu_death
+cols_to_drop = ['patientunitstayid', 'encounter_id', 'dx_class', 'dx_sub', 'icu_death']
+df = df.drop(columns=cols_to_drop, errors='ignore')
 
-# Définir la variable cible
+# Définition de la cible
 TARGET = 'hospital_death'
 
 # Séparer features et cible
-X = df.drop(columns=[TARGET, 'icu_death'])  # on retire les 2 cibles
+X = df.drop(columns=[TARGET])
 y = df[TARGET]
 
-print(f"\nDataset final : {df.shape[0]} patients x {df.shape[1]} variables")
-print(f"Features (X)  : {X.shape[1]} colonnes")
-print(f"Cible (y)     : '{TARGET}' — {y.sum()} décès ({y.mean()*100:.1f}%)")
-print("\nDataset prêt pour la suite ✓")
+# --- 4. BILAN FINAL ---
+
+resume_html = f"""
+<div style="background-color: #f0f7fb; border-left: 8px solid #2980b9; padding: 15px; border-radius: 5px; margin-top: 20px;">
+    <h3 style="margin-top: 0; color: #2980b9;">✅ Dataset finalisé et prêt</h3>
+    <table style="width: 100%; border: none;">
+        <tr>
+            <td><b>Volume :</b> {df.shape[0]:,} patients</td>
+            <td><b>Dimensions :</b> {df.shape[1]} variables</td>
+        </tr>
+        <tr>
+            <td><b>Features (X) :</b> {X.shape[1]} colonnes</td>
+            <td><b>Cible (y) :</b> '{TARGET}'</td>
+        </tr>
+    </table>
+    <hr style="border: 0; border-top: 1px solid #bdc3c7;">
+    <p style="margin-bottom: 0;">
+        <b>Répartition Cible :</b> {y.sum():,} décès (<b>{y.mean()*100:.1f}%</b> de la population)
+    </p>
+</div>
+"""
+
+display(HTML(resume_html))
