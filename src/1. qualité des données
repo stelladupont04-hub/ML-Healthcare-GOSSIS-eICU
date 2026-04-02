@@ -1,5 +1,7 @@
+display(Markdown("### **Qualité des données**"))
+
 # 1. Valeurs manquantes
-display(Markdown("## 1. Valeurs manquantes"))
+display(Markdown("### A. Valeurs manquantes"))
 missing = pd.DataFrame({
     'Nb manquants': df.isnull().sum(),
     '% manquants': (df.isnull().sum() / len(df) * 100)
@@ -15,7 +17,7 @@ if not missing_only.empty:
 display(HTML("<hr>"))
 
 # 2. Doublons
-display(Markdown("## 2. Doublons"))
+display(Markdown("### B. Doublons"))
 n_dupes = df.duplicated().sum()
 
 if n_dupes > 0:
@@ -28,7 +30,7 @@ else:
 display(HTML("<hr>"))
 
 # 3. Type de données
-display(Markdown("## 3. Type de données"))
+display(Markdown("### C. Type de données"))
 col1, col2 = st.columns(2) if 'st' in globals() else (None, None) # Pour Streamlit, mais ici on reste sur Jupyter
 
 display(Markdown("**Répartition des types :**"))
@@ -48,7 +50,7 @@ display(HTML("<hr>"))
 
 
 # 4. Valeurs aberrantes (Outliers)
-display(Markdown("## 4. Valeurs aberrantes"))
+display(Markdown("### D. Valeurs aberrantes"))
 
 # Explication de la méthode
 display(Markdown("""
