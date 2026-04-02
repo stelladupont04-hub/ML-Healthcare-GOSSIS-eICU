@@ -10,7 +10,7 @@ base_path = "/Users/leafelizardo/Desktop/MLH_Projet/data"
 file_name = "gossis-1-eicu-only-model-ready.csv"
 full_path = os.path.join(base_path, file_name)
 
-# --- CHARGEMENT ET CONFIGURATION ---
+# Chargement et configuration
 try:
     df = pd.read_csv(full_path)
     
@@ -20,8 +20,9 @@ try:
     n_numeric = df.select_dtypes(include=['number']).shape[1]
     n_categorical = df.select_dtypes(exclude=['number']).shape[1]
 
-    # --- AFFICHAGE DU DASHBOARD D'IMPORTATION ---
-    display(Markdown("# Chargement du Jeu de Données"))
+    # Affichage
+    display(Markdown("# **1. Analyse exploratoire des données**"))
+
     
     import_html = f"""
     <div style="background-color: #f0f7fb; border: 1px solid #2980b9; padding: 15px; border-radius: 8px;">
@@ -42,8 +43,8 @@ try:
                 
     display(HTML(import_html))
     
-    # --- APERÇU DES DONNÉES ---
-    display(Markdown("### Aperçu des 10 premières lignes"))
+    # Aperçu des données
+    display(Markdown("## **1.1. Aperçu du jeu de données**"))
     display(df.head(10))
 
 except FileNotFoundError:
