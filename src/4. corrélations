@@ -1,12 +1,11 @@
-# --- SECTION 1.4 : ANALYSE DE CORRÉLATION ---
-display(Markdown("# 1.4. Analyse de Corrélation"))
+display(Markdown("## **1.4. Analyse de Corrélation**"))
 
 display(Markdown("""
 Cette analyse identifie les variables numériques ayant la plus forte influence sur la mortalité hospitalière. 
 Nous utilisons le coefficient de **Pearson** pour mesurer l'intensité de la relation linéaire entre les biomarqueurs et la cible.
 """))
 
-# 1. Calcul des corrélations (uniquement numériques)
+# 1. Calcul des corrélations 
 # On calcule la corrélation de toutes les colonnes avec la cible 'hospital_death'
 corr_matrix = df.corr(numeric_only=True)
 target_corr = corr_matrix[TARGET].sort_values(ascending=False)
@@ -15,11 +14,11 @@ target_corr = corr_matrix[TARGET].sort_values(ascending=False)
 top_15_corr = target_corr.abs().sort_values(ascending=False).head(16) # 16 car la cible est incluse
 top_15_corr = top_15_corr.drop(TARGET) # On enlève la cible pour l'affichage
 
-# --- AFFICHAGE GRAPHIQUE ---
+# Affichage
 plt.figure(figsize=(12, 8))
 sns.set_style("whitegrid")
 
-# Création du barplot
+# Barplot
 colors = sns.color_palette("RdYlGn_r", len(top_15_corr))
 ax = sns.barplot(
     x=top_15_corr.values, 
@@ -40,7 +39,7 @@ for i, v in enumerate(top_15_corr.values):
 plt.tight_layout()
 plt.show()
 
-# --- BILAN ANALYTIQUE ---
+# Bilan
 top_var = top_15_corr.index[0]
 top_val = top_15_corr.values[0]
 
