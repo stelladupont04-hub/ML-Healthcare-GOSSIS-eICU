@@ -1,6 +1,6 @@
-display(Markdown("## Nettoyage et Préparation du Dataset"))
+display(Markdown("## **1.2. Nettoyage et Préparation du Dataset**"))
 
-# --- 1. JUSTIFICATION TECHNIQUE ---
+# 1.Méthode
 display(Markdown("""
 ### Analyse des types de données
 Notre code détecte `dx_class` et `dx_sub` comme du texte (**object**), alors qu’il s’agit de variables catégorielles avec de nombreuses modalités.
@@ -8,7 +8,7 @@ Notre code détecte `dx_class` et `dx_sub` comme du texte (**object**), alors qu
 **Optimisation :** Nous avons décidé de supprimer `dx_sub` (trop granulaire) et de regrouper `dx_class` par grandes familles. La variable `icu_death` est également retirée pour éviter tout biais de prédiction (data leakage).
 """))
 
-# --- 2. NETTOYAGE SPÉCIFIQUE (REGEX) ---
+# Nettoyage
 display(Markdown("### Nettoyage des labels (dx_class)"))
 
 # Application du nettoyage
@@ -18,7 +18,7 @@ n_unique_clean = df['dx_class_clean'].nunique()
 display(Markdown(f"**Action :** Suppression des préfixes numériques au début du texte."))
 display(Markdown(f"> *Nombre de catégories uniques après nettoyage : `{n_unique_clean}`*"))
 
-# --- AFFICHAGE DES 12 CATÉGORIES (FIN ET COMPACT) ---
+# affichage des 12 catégories
 noms_categories = sorted(df['dx_class_clean'].unique())
 categories_df = pd.DataFrame({
     '#': range(1, len(noms_categories) + 1),
@@ -46,12 +46,13 @@ display(categories_df.style.hide(axis='index')
             {'selector': 'th', 'props': [('color', '#2980b9'), ('font-weight', 'bold'), ('text-align', 'center'), ('border-bottom', '1px solid #2980b9'), ('padding', '5px')]}
         ]))
 
-# --- 3. EXÉCUTION DU NETTOYAGE GLOBAL ---
+
+# 2. Exécution
 
 # Suppression des NaN
 df = df.dropna(subset=['icu_admit_source'])
 
-# Conversion en Categorical (On enlève dx_sub d'ici car on va la supprimer)
+# Conversion en categorical
 cat_cols = ['partition', 'dcs_group', 'icu_admit_source', 'group', 'dx_class_clean']
 for col in cat_cols:
     if col in df.columns:
@@ -68,7 +69,8 @@ TARGET = 'hospital_death'
 X = df.drop(columns=[TARGET])
 y = df[TARGET]
 
-# --- 4. BILAN FINAL ---
+
+# 3. Bilan
 
 resume_html = f"""
 <div style="background-color: #f0f7fb; border-left: 8px solid #2980b9; padding: 15px; border-radius: 5px; margin-top: 20px;">
