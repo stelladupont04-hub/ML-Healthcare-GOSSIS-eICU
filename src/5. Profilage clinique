@@ -1,0 +1,28 @@
+
+# PROFILAGE CLINIQUE
+display(Markdown("# 1.5. Profilage Clinique (Top 15 Variables)"))
+
+# On récupère les noms des 15 variables de ton analyse précédente
+cols_to_plot = top_15_corr.index.tolist()
+
+# Configuration de la figure (5 lignes, 3 colonnes)
+plt.figure(figsize=(20, 25))
+sns.set_style("whitegrid")
+
+for i, col in enumerate(cols_to_plot):
+    plt.subplot(5, 3, i + 1)
+    
+    # Création du boxplot avec des couleurs explicites
+    # Bleu pour Survie (0), Rouge pour Décès (1)
+    sns.boxplot(x=TARGET, y=col, data=df, palette=['#3498db', '#e74c3c'], hue=TARGET, legend=False)
+    
+    # Personnalisation de chaque sous-graphique
+    plt.title(f"Distribution de {col}", fontsize=14, fontweight='bold')
+    plt.xlabel("Issue (0: Survie, 1: Décès)", fontsize=10)
+    plt.ylabel("Valeur", fontsize=10)
+
+# Ajustement automatique de l'espacement pour éviter les chevauchements
+plt.tight_layout(pad=3.0)
+plt.show()
+
+display(Markdown("---"))
