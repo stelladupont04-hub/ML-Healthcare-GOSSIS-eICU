@@ -1,0 +1,40 @@
+from sklearn.pipeline import Pipeline
+from sklearn.linear_model import LogisticRegression
+from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay, roc_curve, auc
+import matplotlib.pyplot as plt
+
+display(Markdown("# 2.2. Régression logistique"))
+
+# 1. Création et entraînement du Pipeline
+baseline_pipe = Pipeline(steps=[
+    ('preprocessor', preprocessor),
+    ('classifier', LogisticRegression(max_iter=1000, class_weight='balanced'))
+])
+
+baseline_pipe.fit(X_train, y_train)
+
+# 2. Récupération des scores
+y_proba = baseline_pipe.predict_proba(X_test)[:, 1]
+fpr, tpr, thresholds = roc_curve(y_test, y_proba)
+roc_auc = auc(fpr, tpr)
+
+# 3. Affichage Visuel
+fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(16, 6))
+
+# Graphique A : Courbe ROC
+ax1.plot(fpr, tpr, color='darkorange', lw=2, label=f'ROC curve (AUC = {roc_auc:.4f})')
+ax1.plot([0, 1], [0, 1], color='navy', lw=2, linestyle='--')
+ax1.set_title('Courbe ROC - Baseline (Régression Logistique)')
+ax1.set_xlabel('Taux de Faux Positifs')
+ax1.set_ylabel('Taux de Vrais Positifs')
+ax1.legend(loc="lower right")
+
+# Graphique B : Matrice de Confusion
+y_pred = baseline_pipe.predict(X_test)
+cm = confusion_matrix(y_test, y_pred)
+disp = ConfusionMatrixDisplay(confusion_matrix=cm, display_labels=['Survie', 'Décès'])
+disp.plot(ax=ax2, cmap='Blues', values_format='d')
+ax2.set_title('Matrice de Confusion')
+
+plt.tight_layout()
+plt.show()
