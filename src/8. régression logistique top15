@@ -1,0 +1,26 @@
+
+# 1. Calcul des probabilités et de la courbe ROC
+y_proba_top15 = pipe_top15.predict_proba(X_test_top15)[:, 1]
+fpr_15, tpr_15, _ = roc_curve(y_test, y_proba_top15)
+roc_auc_15 = auc(fpr_15, tpr_15)
+
+# 2. Création de la figure
+fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(16, 6))
+
+# Graphique A : Courbe ROC
+ax1.plot(fpr_15, tpr_15, color='darkorange', lw=2, label=f'ROC curve Top 15 (AUC = {roc_auc_15:.4f})')
+ax1.plot([0, 1], [0, 1], color='navy', lw=2, linestyle='--')
+ax1.set_title('Courbe ROC - Baseline Top 15')
+ax1.set_xlabel('Taux de Faux Positifs')
+ax1.set_ylabel('Taux de Vrais Positifs')
+ax1.legend(loc="lower right")
+
+# Graphique B : Matrice de Confusion
+y_pred_top15 = pipe_top15.predict(X_test_top15)
+cm_15 = confusion_matrix(y_test, y_pred_top15)
+disp_15 = ConfusionMatrixDisplay(confusion_matrix=cm_15, display_labels=['Survie', 'Décès'])
+disp_15.plot(ax=ax2, cmap='Blues', values_format='d')
+ax2.set_title('Matrice de Confusion - Top 15')
+
+plt.tight_layout()
+plt.show()
