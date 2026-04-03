@@ -1,11 +1,15 @@
-from sklearn.pipeline import Pipeline
-from sklearn.linear_model import LogisticRegression
-from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay, roc_curve, auc
-import matplotlib.pyplot as plt
+# 3. Préprocesseur complet
+numeric_features = X.select_dtypes(include=['int64', 'float64']).columns
+categorical_features = X.select_dtypes(include=['category', 'object']).columns
 
-display(Markdown("# 2.2. Régression logistique"))
+preprocessor = ColumnTransformer(
+    transformers=[
+        ('num', StandardScaler(), numeric_features),
+        ('cat', OneHotEncoder(handle_unknown='ignore', drop='first'), categorical_features)
+    ])
 
-# 1. Création et entraînement du Pipeline
+display(Markdown("# 2.2. Régression logistique (Full Dataset)"))
+
 baseline_pipe = Pipeline(steps=[
     ('preprocessor', preprocessor),
     ('classifier', LogisticRegression(max_iter=1000, class_weight='balanced'))
@@ -13,28 +17,18 @@ baseline_pipe = Pipeline(steps=[
 
 baseline_pipe.fit(X_train, y_train)
 
-# 2. Récupération des scores
+# Visualisation (Code déjà OK dans ton prompt)
 y_proba = baseline_pipe.predict_proba(X_test)[:, 1]
-fpr, tpr, thresholds = roc_curve(y_test, y_proba)
+fpr, tpr, _ = roc_curve(y_test, y_proba)
 roc_auc = auc(fpr, tpr)
 
-# 3. Affichage Visuel
 fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(16, 6))
-
-# Graphique A : Courbe ROC
-ax1.plot(fpr, tpr, color='darkorange', lw=2, label=f'ROC curve (AUC = {roc_auc:.4f})')
+ax1.plot(fpr, tpr, color='darkorange', lw=2, label=f'ROC Full (AUC = {roc_auc:.4f})')
 ax1.plot([0, 1], [0, 1], color='navy', lw=2, linestyle='--')
-ax1.set_title('Courbe ROC - Baseline (Régression Logistique)')
-ax1.set_xlabel('Taux de Faux Positifs')
-ax1.set_ylabel('Taux de Vrais Positifs')
-ax1.legend(loc="lower right")
+ax1.set_title('ROC - Baseline Full')
+ax1.legend()
 
-# Graphique B : Matrice de Confusion
 y_pred = baseline_pipe.predict(X_test)
 cm = confusion_matrix(y_test, y_pred)
-disp = ConfusionMatrixDisplay(confusion_matrix=cm, display_labels=['Survie', 'Décès'])
-disp.plot(ax=ax2, cmap='Blues', values_format='d')
-ax2.set_title('Matrice de Confusion')
-
-plt.tight_layout()
+ConfusionMatrixDisplay(cm, display_labels=['Survie', 'Décès']).plot(ax=ax2, cmap='Blues')
 plt.show()
