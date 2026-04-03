@@ -1,0 +1,42 @@
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+
+# 1. On récupère le preprocessor entraîné
+fitted_preprocessor = pipe_top15.named_steps['prepro']
+
+# 2. Extraction dynamique des noms
+feature_names = list(num_top15) # On commence par les numériques
+
+# On vérifie si le transformateur 'cat' a bien traité des données
+if 'cat' in fitted_preprocessor.named_transformers_:
+    cat_transformer = fitted_preprocessor.named_transformers_['cat']
+    # On vérifie si cat_top15 n'est pas vide et si l'encodeur est entraîné
+    if len(cat_top15) > 0 and hasattr(cat_transformer, 'categories_'):
+        encoded_names = list(cat_transformer.get_feature_names_out(cat_top15))
+        feature_names += encoded_names
+
+# 3. Récupération des coefficients
+coefs = pipe_top15.named_steps['clf'].coef_[0]
+
+# 4. Vérification de la correspondance des tailles (Sécurité)
+if len(feature_names) != len(coefs):
+    # Si l'encodage 'drop=first' a réduit le nombre de colonnes
+    feature_names = [f"Var_{i}" for i in range(len(coefs))] 
+    print("Note : Noms simplifiés suite à un décalage de dimensions.")
+
+# 5. Calcul des Odds Ratios
+odds_ratios = np.exp(coefs)
+
+# 6. DataFrame et Visualisation
+df_or = pd.DataFrame({'Feature': feature_names, 'OR': odds_ratios}).sort_values(by='OR')
+
+plt.figure(figsize=(10, 8))
+plt.errorbar(df_or['OR'], range(len(df_or)), xerr=0, fmt='o', color='#1f77b4', markersize=8)
+plt.axvline(x=1, color='red', linestyle='--', label='Risque Neutre (OR=1)')
+plt.yticks(range(len(df_or)), df_or['Feature'])
+plt.xlabel('Odds Ratio (Échelle Log)')
+plt.xscale('log')
+plt.title('Forest Plot : Facteurs de Risque (Modèle Top 15)')
+plt.grid(alpha=0.2)
+plt.show()
