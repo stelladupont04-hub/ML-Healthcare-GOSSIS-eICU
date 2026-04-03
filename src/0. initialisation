@@ -11,8 +11,6 @@ from sklearn.compose import ColumnTransformer
 from sklearn.pipeline import Pipeline
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay, roc_curve, auc
-import matplotlib.pyplot as plt
-from IPython.display import Markdown
 
 base_path = "/Users/leafelizardo/Desktop/MLH_Projet/data"
 file_name = "gossis-1-eicu-only-model-ready.csv"
