@@ -10,15 +10,7 @@ X_train, X_test, y_train, y_test = train_test_split(
     X, y, test_size=0.2, random_state=42, stratify=y
 )
 
-# Définition du transformateur (Scaling + Encodage)
-numeric_features = X.select_dtypes(include=['number']).columns
-categorical_features = X.select_dtypes(include=['category', 'object']).columns
 
-preprocessor = ColumnTransformer(
-    transformers=[
-        ('num', StandardScaler(), numeric_features),
-        ('cat', OneHotEncoder(handle_unknown='ignore', drop='first'), categorical_features)
-    ])
 
 # Affichage
 partition_html = f"""
