@@ -1,7 +1,3 @@
-import numpy as np
-import pandas as pd
-import matplotlib.pyplot as plt
-
 # 1. On récupère le preprocessor entraîné
 fitted_preprocessor = pipe_top15.named_steps['prepro']
 
