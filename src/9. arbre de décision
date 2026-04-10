@@ -1,0 +1,12 @@
+# 1. Entraînement d'un arbre simple (pour la visualisation)
+tree_model = DecisionTreeClassifier(max_depth=3, class_weight='balanced', random_state=42)
+tree_model.fit(X_train_top15, y_train)
+
+# 2. Affichage graphique
+plt.figure(figsize=(20,10))
+plot_tree(tree_model, 
+          feature_names=top_15_features, 
+          class_names=['Survie', 'Décès'], 
+          filled=True, rounded=True, fontsize=12)
+plt.title("Arbre de Décision Simplifié (Top 15)")
+plt.show()
