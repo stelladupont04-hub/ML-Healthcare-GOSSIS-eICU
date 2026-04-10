@@ -1,0 +1,90 @@
+display(Markdown("## **2.2. Régression logistique (Baseline)**"))
+
+# APPROCHE COMPLÈTE (67 VARIABLES)
+display(Markdown("### **Approche Full (Toutes les variables)**"))
+
+# 1. Pipeline Full
+baseline_pipe = Pipeline(steps=[
+    ('preprocessor', preprocessor),
+    ('classifier', LogisticRegression(max_iter=1000, class_weight='balanced', random_state=42))
+])
+
+baseline_pipe.fit(X_train, y_train)
+
+# 2. Prédictions et Métriques
+y_proba_full = baseline_pipe.predict_proba(X_test)[:, 1]
+y_pred_full = baseline_pipe.predict(X_test)
+fpr_full, tpr_full, _ = roc_curve(y_test, y_proba_full)
+roc_auc_full = auc(fpr_full, tpr_full)
+
+# 3. Visualisation
+fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(16, 6))
+
+# ROC
+ax1.plot(fpr_full, tpr_full, color='darkorange', lw=2, label=f'ROC Full (AUC = {roc_auc_full:.4f})')
+ax1.plot([0, 1], [0, 1], color='navy', lw=2, linestyle='--')
+ax1.set_title('Courbe ROC - Approche Complète', fontweight='bold')
+ax1.set_xlabel('Taux de Faux Positifs')
+ax1.set_ylabel('Taux de Vrais Positifs')
+ax1.legend(loc="lower right")
+
+# Confusion
+cm_full = confusion_matrix(y_test, y_pred_full)
+disp_full = ConfusionMatrixDisplay(confusion_matrix=cm_full, display_labels=['Survie', 'Décès'])
+disp_full.plot(ax=ax2, cmap='Blues', values_format='d')
+ax2.set_title('Matrice de Confusion - Approche Complète', fontweight='bold')
+
+plt.tight_layout()
+plt.show()
+
+
+# APPROCHE PARCIMONIEUSE (TOP 15 VARIABLES) 
+display(Markdown("---"))
+display(Markdown("### **Approche Parcimonieuse (Top 15 Variables)**"))
+
+# 1. Préparation des données Top 15
+top_15_features = top_15_corr.index.tolist()
+X_train_top15 = X_train[top_15_features]
+X_test_top15 = X_test[top_15_features]
+
+num_top15 = [c for c in top_15_features if c in numeric_features]
+cat_top15 = [c for c in top_15_features if c in categorical_features]
+
+preprocessor_top15 = ColumnTransformer(transformers=[
+    ('num', StandardScaler(), num_top15),
+    ('cat', OneHotEncoder(handle_unknown='ignore', drop='first'), cat_top15)
+])
+
+# 2. Pipeline Top 15
+pipe_top15 = Pipeline(steps=[
+    ('prepro', preprocessor_top15),
+    ('clf', LogisticRegression(max_iter=1000, class_weight='balanced', random_state=42))
+])
+
+pipe_top15.fit(X_train_top15, y_train)
+
+# 3. Prédictions et Métriques
+y_proba_15 = pipe_top15.predict_proba(X_test_top15)[:, 1]
+y_pred_15 = pipe_top15.predict(X_test_top15)
+fpr_15, tpr_15, _ = roc_curve(y_test, y_proba_15)
+roc_auc_15 = auc(fpr_15, tpr_15)
+
+# 4. Visualisation (Même structure que Full)
+fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(16, 6))
+
+# ROC
+ax1.plot(fpr_15, tpr_15, color='orange', lw=2, label=f'ROC Top 15 (AUC = {roc_auc_15:.4f})')
+ax1.plot([0, 1], [0, 1], color='navy', lw=2, linestyle='--')
+ax1.set_title('Courbe ROC - Approche Top 15', fontweight='bold')
+ax1.set_xlabel('Taux de Faux Positifs')
+ax1.set_ylabel('Taux de Vrais Positifs')
+ax1.legend(loc="lower right")
+
+# Confusion
+cm_15 = confusion_matrix(y_test, y_pred_15)
+disp_15 = ConfusionMatrixDisplay(confusion_matrix=cm_15, display_labels=['Survie', 'Décès'])
+disp_15.plot(ax=ax2, cmap='Blues', values_format='d')
+ax2.set_title('Matrice de Confusion - Approche Top 15', fontweight='bold')
+
+plt.tight_layout()
+plt.show()
