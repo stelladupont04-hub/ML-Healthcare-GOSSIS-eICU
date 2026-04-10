@@ -1,38 +1,52 @@
-# 1. On récupère le preprocessor entraîné
+# 1. Préparation des données (on garde ta logique)
 fitted_preprocessor = pipe_top15.named_steps['prepro']
+feature_names = list(num_top15)
 
-# 2. Extraction dynamique des noms
-feature_names = list(num_top15) # On commence par les numériques
-
-# On vérifie si le transformateur 'cat' a bien traité des données
 if 'cat' in fitted_preprocessor.named_transformers_:
     cat_transformer = fitted_preprocessor.named_transformers_['cat']
-    # On vérifie si cat_top15 n'est pas vide et si l'encodeur est entraîné
     if len(cat_top15) > 0 and hasattr(cat_transformer, 'categories_'):
         encoded_names = list(cat_transformer.get_feature_names_out(cat_top15))
         feature_names += encoded_names
 
-# 3. Récupération des coefficients
 coefs = pipe_top15.named_steps['clf'].coef_[0]
-
-# 4. Vérification de la correspondance des tailles (Sécurité)
 if len(feature_names) != len(coefs):
-    # Si l'encodage 'drop=first' a réduit le nombre de colonnes
     feature_names = [f"Var_{i}" for i in range(len(coefs))] 
-    print("Note : Noms simplifiés suite à un décalage de dimensions.")
 
-# 5. Calcul des Odds Ratios
-odds_ratios = np.exp(coefs)
+# 2. Création du DataFrame et tri
+df_or = pd.DataFrame({'Feature': feature_names, 'OR': np.exp(coefs)})
+df_or = df_or.sort_values(by='OR')
 
-# 6. DataFrame et Visualisation
-df_or = pd.DataFrame({'Feature': feature_names, 'OR': odds_ratios}).sort_values(by='OR')
-
+# 3. Visualisation
 plt.figure(figsize=(10, 8))
-plt.errorbar(df_or['OR'], range(len(df_or)), xerr=0, fmt='o', color='#1f77b4', markersize=8)
-plt.axvline(x=1, color='red', linestyle='--', label='Risque Neutre (OR=1)')
-plt.yticks(range(len(df_or)), df_or['Feature'])
-plt.xlabel('Odds Ratio (Échelle Log)')
-plt.xscale('log')
-plt.title('Forest Plot : Facteurs de Risque (Modèle Top 15)')
-plt.grid(alpha=0.2)
+sns.set_style("white") # Style épuré
+
+# Définition des couleurs : Corail pour risque (OR > 1), Bleu pour protecteur (OR < 1)
+colors = ['#EC7063' if x > 1 else '#5499C7' for x in df_or['OR']]
+
+# Tracé des lignes horizontales (plus fin)
+plt.hlines(y=range(len(df_or)), xmin=df_or['OR'], xmax=1, color='gray', alpha=0.3, linewidth=1)
+
+# Tracé des points (Odds Ratios)
+plt.scatter(df_or['OR'], range(len(df_or)), s=100, c=colors, edgecolors='white', zorder=3, label='Odds Ratio')
+
+# Ligne de référence (Risque neutre)
+plt.axvline(x=1, color='#2c3e50', linestyle='-', linewidth=1.5, alpha=0.8)
+plt.fill_betweenx(range(-1, len(df_or)+1), 0, 1, color='#5499C7', alpha=0.05) # Zone protectrice
+plt.fill_betweenx(range(-1, len(df_or)+1), 1, df_or['OR'].max()*1.1, color='#EC7063', alpha=0.05) # Zone de risque
+
+# Mise en forme des axes
+plt.yticks(range(len(df_or)), df_or['Feature'], fontsize=11, fontweight='500')
+plt.xscale('log') # Garde l'échelle log pour la symétrie médicale
+plt.xlabel('Odds Ratio (Échelle Log)', fontsize=12, labelpad=15)
+plt.title('Forest Plot : Impact des variables sur la mortalité (Modèle Top 15)', 
+          fontsize=14, fontweight='bold', pad=20, loc='center')
+
+# Ajout de texte explicatif sur le graphique
+plt.text(0.2, -0.12, '← Protecteur', color='#5499C7', fontweight='bold', ha='center', fontsize=9, transform=plt.gca().transAxes)
+plt.text(0.8, -0.12, 'Risque →', color='#EC7063', fontweight='bold', ha='center', fontsize=9, transform=plt.gca().transAxes)
+
+# Nettoyage des bordures
+sns.despine(left=True, bottom=True)
+plt.grid(axis='x', linestyle='--', alpha=0.4)
+plt.tight_layout()
 plt.show()
