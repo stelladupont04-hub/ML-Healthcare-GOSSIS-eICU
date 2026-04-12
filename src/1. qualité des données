@@ -82,7 +82,7 @@ outlier_df = pd.DataFrame(outlier_report).sort_values('% outliers', ascending=Fa
 if not outlier_df.empty:
     display(Markdown(f"**Total : {len(outlier_df)} colonnes contiennent des valeurs aberrantes.**"))
     
-    # .style sans couleurs, juste pour le formatage des nombres
+    # style sans couleurs, juste pour le formatage des nombres
     display(outlier_df.head(15).style
             .format({'% outliers': '{:.2f}%', 'Nb outliers': '{:,}'})
             .hide(axis='index'))
