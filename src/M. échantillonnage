@@ -1,0 +1,22 @@
+# SOUS-ÉCHANTILLONNAGE ÉQUILIBRÉ (TRAIN UNIQUEMENT) 
+train_data = pd.concat([X_train, y_train], axis=1)
+morts = train_data[train_data[TARGET] == 1]
+vivants = train_data[train_data[TARGET] == 0]
+
+# On prend TOUS les décès disponibles + le même nombre de survivants
+n_morts = min(10000, len(morts))  # 9454 décès max
+n_vivants = n_morts               # même nombre → dataset équilibré 50/50
+
+morts_train_resampled = resample(morts, replace=False, n_samples=n_morts, random_state=42)
+vivants_train_resampled = resample(vivants, replace=False, n_samples=n_vivants, random_state=42)
+
+train_bal = pd.concat([morts_train_resampled, vivants_train_resampled])
+X_train_bal = train_bal.drop(columns=[TARGET])
+y_train_bal = train_bal[TARGET]
+
+# Le jeu de test reste INTACT
+X_test_bal = X_test
+y_test_bal = y_test
+
+print(f"Entraînement rééchantillonné : {len(y_train_bal)} patients ({sum(y_train_bal)} décès / {len(y_train_bal)-sum(y_train_bal)} survivants)")
+print(f"Test (original inchangé)     : {len(y_test_bal)} patients ({sum(y_test_bal)} décès / {len(y_test_bal)-sum(y_test_bal)} survivants)")
