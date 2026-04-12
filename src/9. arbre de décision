@@ -1,3 +1,5 @@
+display(Markdown("## **3.1.2. Arbre dedécision**"))
+
 # 1. Entraînement d'un arbre simple (pour la visualisation)
 tree_model = DecisionTreeClassifier(max_depth=3, class_weight='balanced', random_state=42)
 tree_model.fit(X_train_top15, y_train)
@@ -10,3 +12,31 @@ plot_tree(tree_model,
           filled=True, rounded=True, fontsize=12)
 plt.title("Arbre de Décision Simplifié (Top 15)")
 plt.show()
+
+# 2. Calcul des métriques
+auc_tree = roc_auc_score(y_test, y_proba_tree)
+rec_tree = recall_score(y_test, y_pred_tree) # Rappel / Sensibilité
+
+# 3. Affichage du tableau stylisé
+display(HTML(f"""
+<div style="background:#fcfcfc; border:1.5px solid #2e86c1; padding:15px; border-radius:10px; margin-top:20px;">
+  <b style="color:#2e86c1;">Évaluation de l'Arbre de Décision (Visualisation) :</b><br><br>
+  <table style="width:100%; border-collapse: collapse;">
+    <tr>
+      <td style="padding:5px; border-bottom:1px solid #eee;"><b>Modèle :</b></td>
+      <td style="padding:5px; border-bottom:1px solid #eee; text-align:right;">Arbre de Décision (Profondeur = 3)</td>
+    </tr>
+    <tr>
+      <td style="padding:5px; border-bottom:1px solid #eee;"><b>AUC-ROC :</b></td>
+      <td style="padding:5px; border-bottom:1px solid #eee; text-align:right;">{auc_tree:.4f}</td>
+    </tr>
+    <tr>
+      <td style="padding:5px;"><b>Sensibilité (Recall) :</b></td>
+      <td style="padding:5px; text-align:right; color:#2e86c1; font-weight:bold;">{rec_tree:.4f}</td>
+    </tr>
+  </table>
+  <p style="font-size:12px; color:#555; margin-top:10px;">
+    Note : Ce modèle est volontairement limité à une profondeur de 3 niveaux pour garantir son interprétabilité clinique immédiate.
+  </p>
+</div>
+"""))
