@@ -1,0 +1,58 @@
+display(Markdown("## **3.1.4. XGBoost — Échantillon Total (Top 15)**"))
+
+# 1. Pipeline XGBoost
+# scale_pos_weight permet de gérer le déséquilibre (ratio vivants/morts)
+ratio = sum(y_train == 0) / sum(y_train == 1)
+
+pipe_xgb = Pipeline([
+    ('prep', preprocessor_top15),
+    ('clf', XGBClassifier(
+        n_estimators=100,
+        scale_pos_weight=ratio, # Équivalent de class_weight='balanced'
+        learning_rate=0.1,
+        max_depth=5,
+        random_state=42,
+        use_label_encoder=False,
+        eval_metric='logloss'
+    ))
+])
+
+# 2. Entraînement
+pipe_xgb.fit(X_train_top15, y_train)
+
+# 3. Évaluation
+y_proba_xgb = pipe_xgb.predict_proba(X_test_top15)[:, 1]
+y_pred_xgb = pipe_xgb.predict(X_test_top15)
+
+auc_xgb = roc_auc_score(y_test, y_proba_xgb)
+rec_xgb = recall_score(y_test, y_pred_xgb)
+
+# 4. Visualisations
+fig, axes = plt.subplots(1, 2, figsize=(16, 6))
+RocCurveDisplay.from_predictions(y_test, y_proba_xgb, ax=axes[0], color='orange', lw=2)
+axes[0].plot([0, 1], [0, 1], color='navy', lw=2, linestyle='--')
+axes[0].set_title("Courbe ROC - XGBoost", fontweight='bold')
+
+ConfusionMatrixDisplay.from_predictions(y_test, y_pred_xgb, display_labels=['Survie', 'Décès'], cmap='Blues', ax=axes[1])
+axes[1].set_title("Matrice de Confusion - XGBoost", fontweight='bold')
+plt.show()
+
+# 5. Bloc de résultats stylisé (Ta charte graphique)
+display(HTML(f"""
+<div style="background:#fcfcfc; border:1.5px solid #2e86c1; padding:15px; border-radius:10px;">
+  <b style="color:#2e86c1;">Résultats XGBoost (Approche Top 15 - Échantillon Complet) :</b><br><br>
+  <table style="width:100%; border-collapse: collapse;">
+    <tr>
+      <td style="padding:5px; border-bottom:1px solid #eee;"><b>AUC-ROC :</b></td>
+      <td style="padding:5px; border-bottom:1px solid #eee; text-align:right;">{auc_xgb:.4f}</td>
+    </tr>
+    <tr>
+      <td style="padding:5px;"><b>Sensibilité (Recall) :</b></td>
+      <td style="padding:5px; text-align:right; color:#2e86c1; font-weight:bold;">{rec_xgb:.4f}</td>
+    </tr>
+  </table>
+  <p style="font-size:12px; color:#555; margin-top:10px;">
+    Note : XGBoost utilise le paramètre 'scale_pos_weight' pour compenser le déséquilibre des classes sur l'échantillon total.
+  </p>
+</div>
+"""))
