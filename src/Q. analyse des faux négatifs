@@ -1,0 +1,5 @@
+display(Markdown("## **4.3. Analyse des faux négatifs**"))
+
+# Identifier les "Faux Négatifs" sur les Top 15 variables uniquement
+faux_negatifs = X_test_top15[(y_test == 1) & (y_pred_xgb == 0)]
+display(faux_negatifs.describe())
