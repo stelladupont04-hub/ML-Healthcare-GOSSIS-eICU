@@ -1,0 +1,74 @@
+display(Markdown("## **3.3. Synthèse : Comparaison de toutes les approches (Top 15)**"))
+
+# Recall pour chaque modèle (classe 1 = Décès)
+recall_15 = recall_score(y_test, y_pred_15)
+recall_rf15 = recall_score(y_test, y_pred_rf15)
+rec_rf_bal = recall_score(y_test_bal, y_pred_rf_bal)
+rec_bal = recall_score(y_test_bal, y_pred_bal)
+rec_xgb = recall_score(y_test, y_pred_xgb) 
+plt.figure(figsize=(10, 8))
+
+# 1. Régression Logistique (Échantillon Total - Config 1)
+# Note : j'utilise y_proba_15 et roc_auc_15 définis lors de ton test LR Top 15 précédent
+fpr_lr, tpr_lr, _ = roc_curve(y_test, y_proba_15)
+plt.plot(fpr_lr, tpr_lr, label=f'Régression Logistique (AUC = {roc_auc_15:.3f})', color='navy', linestyle='--')
+
+# 2. Random Forest (Échantillon Total - Config 1)
+# Note : j'utilise y_proba_rf15 défini lors de ton premier test RF
+fpr_rf, tpr_rf, _ = roc_curve(y_test, y_proba_rf15)
+plt.plot(fpr_rf, tpr_rf, label=f'Random Forest Standard (AUC = {auc_rf15:.3f})', color='green', alpha=0.5)
+
+# 3. Random Forest (Jeu Rééchantillonné - Config 2)
+# Utilise tes variables : y_test_bal et y_proba_rf_bal
+fpr_rf_bal, tpr_rf_bal, _ = roc_curve(y_test_bal, y_proba_rf_bal)
+plt.plot(fpr_rf_bal, tpr_rf_bal, label=f'RF Rééchantillonné (AUC = {auc_rf_bal:.3f})', color='darkgreen', linestyle='-.')
+
+# 4. XGBoost (Échantillon Total - LE CHAMPION)
+# Utilise tes variables : y_test et y_proba_xgb
+fpr_xgb, tpr_xgb, _ = roc_curve(y_test, y_proba_xgb)
+plt.plot(fpr_xgb, tpr_xgb, label=f'XGBoost (AUC = {auc_xgb:.3f})', color='orange', lw=3)
+
+# 5. Régression Logistique (Jeu Rééchantillonné - Config 2)
+# Utilise tes variables : y_test_bal et y_proba_bal
+fpr_lr_bal, tpr_lr_bal, _ = roc_curve(y_test_bal, y_proba_bal)
+plt.plot(fpr_lr_bal, tpr_lr_bal, label=f'LR Rééchantillonné (AUC = {auc_bal:.3f})', color='gray', linestyle=':', alpha=0.6)
+
+# Habillage esthétique
+plt.plot([0, 1], [0, 1], color='black', lw=1, linestyle='--')
+plt.xlim([0.0, 1.0])
+plt.ylim([0.0, 1.05])
+plt.xlabel('Taux de Faux Positifs (1 - Spécificité)')
+plt.ylabel('Taux de Vrais Positifs (Sensibilité)')
+plt.title('Comparaison des Courbes ROC (Match Final Top 15)', fontweight='bold', fontsize=14)
+plt.legend(loc="lower right", fontsize=10)
+plt.grid(alpha=0.2)
+plt.show()
+
+# TABLEAU DE SYNTHÈSE FINAL
+data_final = {
+    "Modèle": ["Régression Logistique", "Random Forest", "RF Rééchantillonné", "LR Rééchantillonné", "XGBoost"],
+    "Échantillon": ["Total", "Total", "Réduit", "Réduit", "Total"],
+    "AUC-ROC": [f"{roc_auc_15:.3f}", f"{auc_rf15:.3f}", f"{auc_rf_bal:.3f}", f"{auc_bal:.3f}", f"<b>{auc_xgb:.3f}</b>"],
+    "Recall": [f"{recall_15:.3f}", f"{recall_rf15:.3f}", f"{rec_rf_bal:.3f}", f"{rec_bal:.3f}", f"<b style='color:#2e86c1;'>{rec_xgb:.3f}</b>"]
+}
+
+df_final = pd.DataFrame(data_final)
+
+display(HTML(f"""
+<div style="background:#fcfcfc; border:1.5px solid #2e86c1; padding:20px; border-radius:10px;">
+  <h3 style="color:#2e86c1; margin-top:0;">🏆 Bilan de la Phase de Modélisation</h3>
+  <table style="width:100%; border-collapse: collapse; text-align: left;">
+    <thead style="background-color: #f2f2f2;">
+      <tr>
+        <th style="padding: 10px; border-bottom: 2px solid #2e86c1;">Modèle</th>
+        <th style="padding: 10px; border-bottom: 2px solid #2e86c1;">Échantillon</th>
+        <th style="padding: 10px; border-bottom: 2px solid #2e86c1;">AUC-ROC</th>
+        <th style="padding: 10px; border-bottom: 2px solid #2e86c1;">Recall</th>
+      </tr>
+    </thead>
+    <tbody>
+      {''.join([f"<tr>{''.join([f'<td style=\"padding: 10px; border-bottom: 1px solid #eee;\">{val}</td>' for val in row])}</tr>" for row in df_final.values])}
+    </tbody>
+  </table>
+</div>
+"""))
