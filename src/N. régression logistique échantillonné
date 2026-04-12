@@ -1,0 +1,60 @@
+display(Markdown("## **2.5. Régression Logistique sur Jeu Rééchantillonné (Top 15)**"))
+
+# 1. Sélection des variables
+X_train_bal_15 = X_train_bal[top_15_features]
+X_test_bal_15 = X_test_bal[top_15_features]
+
+# 2. Construction du Pipeline
+pipe_lr_bal = Pipeline([
+    ('prep', preprocessor_top15),
+    ('clf', LogisticRegression(max_iter=1000, random_state=42))
+])
+
+# 3. Entraînement
+pipe_lr_bal.fit(X_train_bal_15, y_train_bal)
+
+# 4. Évaluation
+y_proba_bal = pipe_lr_bal.predict_proba(X_test_bal_15)[:, 1]
+y_pred_bal = pipe_lr_bal.predict(X_test_bal_15)
+
+auc_bal = roc_auc_score(y_test_bal, y_proba_bal)
+rec_bal = recall_score(y_test_bal, y_pred_bal)
+
+# 5. Visualisations (ROC et Matrice)
+fig, axes = plt.subplots(1, 2, figsize=(16, 6))
+
+# Courbe ROC (Orange pour la cohérence avec les autres Baseline)
+RocCurveDisplay.from_predictions(y_test_bal, y_proba_bal, 
+                                  name=f'LR Rééchantillonné (AUC={auc_bal:.4f})',
+                                  ax=axes[0], color='orange', lw=2)
+axes[0].plot([0, 1], [0, 1], color='navy', lw=2, linestyle='--')
+axes[0].set_title("Courbe ROC - Modèle Rééchantillonné", fontweight='bold')
+axes[0].set_xlabel('Taux de Faux Positifs')
+axes[0].set_ylabel('Taux de Vrais Positifs')
+axes[0].legend(loc="lower right")
+
+# Matrice de Confusion
+ConfusionMatrixDisplay.from_predictions(y_test_bal, y_pred_bal, 
+                                        display_labels=['Survie', 'Décès'], 
+                                        cmap='Blues', ax=axes[1], values_format='d')
+axes[1].set_title("Matrice de Confusion - Modèle Rééchantillonné", fontweight='bold')
+
+plt.tight_layout()
+plt.show()
+
+# 6. Bloc de résultats stylisé (Identique à ta charte graphique bleue)
+display(HTML(f"""
+<div style="background:#fcfcfc; border:1.5px solid #2e86c1; padding:15px; border-radius:10px;">
+  <b style="color:#2e86c1;">Résultats après rééquilibrage manuel (Undersampling) :</b><br><br>
+  <table style="width:100%; border-collapse: collapse;">
+    <tr>
+      <td style="padding:5px; border-bottom:1px solid #eee;"><b>AUC-ROC :</b></td>
+      <td style="padding:5px; border-bottom:1px solid #eee; text-align:right;">{auc_bal:.4f}</td>
+    </tr>
+    <tr>
+      <td style="padding:5px;"><b>Sensibilité (Recall) :</b></td>
+      <td style="padding:5px; text-align:right; color:#2e86c1; font-weight:bold;">{rec_bal:.4f}</td>
+    </tr>
+  </table>
+</div>
+"""))
