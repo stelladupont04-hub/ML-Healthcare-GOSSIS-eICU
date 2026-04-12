@@ -1,0 +1,100 @@
+display(Markdown("## **3.1.3. Random Forest — Approche Parcimonieuse (Top 15)**"))
+
+# 1. Définition des variables et préparation des données
+top15_vars = [
+    'd1_lactate_avg', 'vent', 'd1_arterial_ph_avg', 'd1_spo2_diff',
+    'd1_spo2_avg', 'd1_inr_avg', 'd1_lactate_diff', 'd1_albumin_avg',
+    'd1_bun_avg', 'd1_temp_diff', 'd1_heartrate_diff', 'd1_arterial_ph_diff',
+    'd1_arterial_pco2_diff', 'd1_pao2fio2ratio_diff', 'd1_hco3_avg'
+] 
+
+X_train_top15 = X_train[top15_vars]
+X_test_top15  = X_test[top15_vars]
+
+preprocessor_top15 = ColumnTransformer(transformers=[
+    ('num', StandardScaler(), top15_vars)
+])
+
+# 2. Construction du Pipeline
+pipe_rf_top15 = Pipeline([
+    ('prep', preprocessor_top15),
+    ('clf', RandomForestClassifier(
+        n_estimators=200,
+        class_weight='balanced',
+        n_jobs=-1,
+        random_state=42
+    ))
+])
+
+# 3. Validation croisée stratifiée
+cv = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
+cv_rf15 = cross_validate(pipe_rf_top15, X_train_top15, y_train,
+                          cv=cv, scoring={'roc_auc': 'roc_auc', 'recall': 'recall'}, n_jobs=-1)
+
+# 4. Entraînement final et calcul des scores
+pipe_rf_top15.fit(X_train_top15, y_train)
+
+y_proba_rf15 = pipe_rf_top15.predict_proba(X_test_top15)[:, 1]
+y_pred_rf15  = pipe_rf_top15.predict(X_test_top15)
+
+auc_rf15    = roc_auc_score(y_test, y_proba_rf15)
+recall_rf15 = recall_score(y_test, y_pred_rf15)
+
+# 5. Visualisations principales (ROC et Matrice)
+fig, axes = plt.subplots(1, 2, figsize=(16, 6))
+
+# Courbe ROC (Orange pour rester cohérent avec la Baseline Top 15)
+RocCurveDisplay.from_predictions(y_test, y_proba_rf15,
+                                  name=f'RF Top 15 (AUC={auc_rf15:.4f})',
+                                  ax=axes[0], color='orange', lw=2)
+axes[0].plot([0,1],[0,1], color='navy', lw=2, linestyle='--')
+axes[0].set_title("Courbe ROC - Random Forest Top 15", fontweight='bold')
+axes[0].set_xlabel('Taux de Faux Positifs')
+axes[0].set_ylabel('Taux de Vrais Positifs')
+axes[0].legend(loc="lower right")
+
+# Matrice de confusion
+cm_15 = confusion_matrix(y_test, y_pred_rf15)
+disp_15 = ConfusionMatrixDisplay(confusion_matrix=cm_15, display_labels=['Survie', 'Décès'])
+disp_15.plot(ax=axes[1], cmap='Blues', values_format='d')
+axes[1].set_title("Matrice de Confusion - Random Forest Top 15", fontweight='bold')
+
+plt.tight_layout()
+plt.show()
+
+# 6. Bloc de résultats stylisé (Identique à la Régression Logistique)
+display(HTML(f"""
+<div style="background:#fcfcfc; border:1.5px solid #2e86c1; padding:15px; border-radius:10px;">
+  <b style="color:#2e86c1;">Résultats Random Forest (Approche Top 15) :</b><br><br>
+  <table style="width:100%; border-collapse: collapse;">
+    <tr style="background:#f8f9fa;">
+      <th style="padding:6px; border-bottom:1px solid #eee; text-align:left;">Métrique</th>
+      <th style="padding:6px; border-bottom:1px solid #eee; text-align:center;">Validation Croisée (moy ± std)</th>
+      <th style="padding:6px; border-bottom:1px solid #eee; text-align:right;">Jeu de Test</th>
+    </tr>
+    <tr>
+      <td style="padding:8px; border-bottom:1px solid #eee;"><b>AUC-ROC :</b></td>
+      <td style="padding:8px; border-bottom:1px solid #eee; text-align:center;">{cv_rf15['test_roc_auc'].mean():.3f} ± {cv_rf15['test_roc_auc'].std():.3f}</td>
+      <td style="padding:8px; border-bottom:1px solid #eee; text-align:right;">{auc_rf15:.4f}</td>
+    </tr>
+    <tr>
+      <td style="padding:8px;"><b>Sensibilité (Recall) :</b></td>
+      <td style="padding:8px; text-align:center;">{cv_rf15['test_recall'].mean():.3f} ± {cv_rf15['test_recall'].std():.3f}</td>
+      <td style="padding:8px; text-align:right; color:#2e86c1; font-weight:bold;">{recall_rf15:.4f}</td>
+    </tr>
+  </table>
+</div>
+"""))
+
+# 7. Importance des variables
+display(Markdown("### **Importance des variables (Gini Index)**"))
+importances_15 = pipe_rf_top15.named_steps['clf'].feature_importances_
+feat_imp_15    = pd.Series(importances_15, index=top15_vars).sort_values(ascending=True)
+
+fig, ax = plt.subplots(figsize=(9, 6))
+feat_imp_15.plot(kind='barh', ax=ax, color='navy', edgecolor='white')
+ax.set_title("Hiérarchie des prédicteurs — Random Forest", fontsize=13, fontweight='bold')
+ax.set_xlabel("Importance Gini")
+ax.spines[['top','right']].set_visible(False)
+plt.tight_layout()
+plt.show()
